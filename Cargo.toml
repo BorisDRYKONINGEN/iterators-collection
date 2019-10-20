@@ -1,0 +1,7 @@
+[package]
+name = "iterators-collection"
+version = "0.1.0"
+authors = ["Boris DRYKONINGEN <boris.d@orange.fr>"]
+edition = "2018"
+
+[dependencies]
