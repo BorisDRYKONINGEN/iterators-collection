@@ -1,6 +1,19 @@
 //! The iterators in this module aim to select the elements to yield
 
 /// Excludes an object from iteration. Based on a blacklist
+/// 
+/// # Example
+/// ```
+/// use iterators_collection::filter::Exclude;
+/// 
+/// let array = [1, 2, 3, 4, 5];
+/// let iter = array.iter().cloned();
+/// // The iterator will ignore the values 3 and 5
+/// let mut iter = Exclude::with_blacklist(iter, vec![3, 5]);
+/// 
+/// // Once 3 and 5 removed, there are only 1, 2 and 4
+/// assert_eq!(iter.collect::<Vec<i32>>(), vec![1, 2, 4]);
+/// ```
 #[derive(Clone)]
 pub struct Exclude<T>
 where
