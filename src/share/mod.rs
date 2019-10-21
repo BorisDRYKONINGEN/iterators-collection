@@ -9,7 +9,7 @@
 /// use iterators_collection::share::DoubleIterator;
 /// 
 /// let mut array = [1, 2, 3, 4, 5];
-/// let mut iter = DoubleIterator::new(&mut array);
+/// let iter = DoubleIterator::new(&mut array);
 /// 
 /// for (i, j) in iter {
 ///     // Some code here
@@ -20,8 +20,8 @@
 /// 
 /// ```
 /// let array = [1, 2, 3, 4, 5];
-/// for i in array.iter().cloned() {
-///     for j in array.iter().cloned() {
+/// for i in array.iter() {
+///     for j in array.iter() {
 ///         // Some code here
 ///     }
 /// }
@@ -33,6 +33,8 @@
 /// - you can safely iterate on a mutable slice with `DoubleIterator`
 /// 
 /// - i and j CANNOT be shared across threads because it is unsafe to increment the iterator in one thread while accessing one of these references from the other one. It may lead to a data race
+/// 
+/// - i and j are raw pointers and not references because the correct lifetime for the borrowed values is not known at compile time since a simple call to the `next` method may lead to a data race because two mutable references to the same object may exist
 pub struct DoubleIterator<'a, T> {
     slice: &'a mut [T],
     first: usize,
@@ -89,17 +91,15 @@ impl<'a, T> DoubleIterator<'a, T> {
     }
 }
 
-impl<'a, T> Iterator for DoubleIterator<'a, T> {
-    type Item = (&'a mut T, &'a mut T);
+impl<T> Iterator for DoubleIterator<'_, T> {
+    type Item = (*mut T, *mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Err(()) = self.increment() {
             return None;
         }
 
-        let ref1 = unsafe { &mut *self.nth_ptr(self.first)  };
-        let ref2 = unsafe { &mut *self.nth_ptr(self.second) };
-        Some((ref1, ref2))
+        Some(unsafe { (self.nth_ptr(self.first), self.nth_ptr(self.second)) })
     }
 }
 
