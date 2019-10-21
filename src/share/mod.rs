@@ -35,6 +35,18 @@
 /// - i and j CANNOT be shared across threads because it is unsafe to increment the iterator in one thread while accessing one of these references from the other one. It may lead to a data race
 /// 
 /// - i and j are raw pointers and not references because the correct lifetime for the borrowed values is not known at compile time since a simple call to the `next` method may lead to a data race because two mutable references to the same object may exist
+/// 
+/// Since version 0.3.0, the preferred way to do it is to use the `safe_for_each` method because you can use this iterator without writting unsafe code
+/// ```
+/// use iterators_collection::share::DoubleIterator;
+/// 
+/// let mut array = [1, 2, 3, 4, 5];
+/// let iter = DoubleIterator::new(&mut array);
+/// 
+/// iter.safe_for_each(|i, j| {
+///     // Some code here
+/// });
+/// ```
 pub struct DoubleIterator<'a, T> {
     slice: &'a mut [T],
     first: usize,
@@ -86,6 +98,31 @@ impl<'a, T> DoubleIterator<'a, T> {
 
             if self.first != self.second {
                 return Ok(());
+            }
+        }
+    }
+
+    /// Runs the given closure in a safe context
+    /// 
+    /// # Example
+    /// ```
+    /// use iterators_collection::share::DoubleIterator;
+    /// 
+    /// let mut array = [1, 2, 3, 4, 5];
+    /// let iter = DoubleIterator::new(&mut array);
+    /// 
+    /// iter.safe_for_each(|i, j| {
+    ///     println!("Got i = {} and j = {}", i, j);
+    ///     assert_ne!(i, j);
+    /// });
+    /// ```
+    /// 
+    /// # Notes
+    /// Not like a legacy iteration using a `for` loop, i and j are references because it's safe to use in this context
+    pub fn safe_for_each<F: Fn(&mut T, &mut T)>(self, callback: F) {
+        for (i, j) in self {
+            unsafe {
+                callback(&mut *i, &mut *j);
             }
         }
     }

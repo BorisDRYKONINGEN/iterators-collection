@@ -39,3 +39,14 @@ fn double_iterator_does_not_loop() {
 
     assert!(iter.next().is_none());
 }
+
+#[test]
+fn double_iterator_safe_for_each() {
+    let mut array = [1, 2, 3, 4, 5];
+    let iter = DoubleIterator::new(&mut array);
+
+    // Here, we just test that it compiles without error
+    iter.safe_for_each(|i: &mut i32, j: &mut i32| {
+        println!("Got i = {} and j = {}", i, j);
+    });
+}
