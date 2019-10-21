@@ -1,6 +1,9 @@
 //! A module about advanced memory sharing during iteration
 
-/// Iterates twice over the same collection. Therefore, the following code
+/// Iterates twice over the same collection
+/// 
+/// # Example
+/// The following code
 /// 
 /// ```
 /// use iterators_collection::share::DoubleIterator;
@@ -25,10 +28,11 @@
 /// ```
 /// 
 /// with some differences:
-///     - i and j will never be the same with `DoubleIterator`
-///     - you can safely use `iter_mut` instead of `iter` with `DoubleIterator`
-///     - i and j CANNOT be shared across threads because it is unsafe to increment the iterator in one thread while accessing one of these references from the other one. It may lead to a data race
-///     - for the same reason as before, i and j are not references but proxy classes. You must dereference them in an `unsafe` block, meaning you agree with the previous point
+/// - i and j will never be the same with `DoubleIterator`
+/// 
+/// - you can safely iterate on a mutable slice with `DoubleIterator`
+/// 
+/// - i and j CANNOT be shared across threads because it is unsafe to increment the iterator in one thread while accessing one of these references from the other one. It may lead to a data race
 pub struct DoubleIterator<'a, T> {
     slice: &'a mut [T],
     first: usize,
