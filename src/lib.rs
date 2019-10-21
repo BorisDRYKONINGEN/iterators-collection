@@ -3,6 +3,3 @@
 pub mod filter;
 
 pub mod share;
-
-mod core;
-use crate::core::*;
