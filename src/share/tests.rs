@@ -50,3 +50,44 @@ fn double_iterator_safe_for_each() {
         println!("Got i = {} and j = {}", i, j);
     });
 }
+
+#[test]
+fn double_iterator_reset() {
+    let mut array = [1, 2, 3, 4, 5];
+    let mut iter = DoubleIterator::new(&mut array);
+
+    while iter.next().is_some() {}
+
+    iter.reset();
+    iter.next().unwrap();
+}
+
+#[test]
+fn double_iterator_set() {
+    let mut array = [1, 2, 3, 4, 5];
+    let mut iter = DoubleIterator::new(&mut array);
+
+    while iter.next().is_some() {}
+
+    iter.set(0, 1);
+    iter.next().unwrap();
+}
+
+#[test]
+#[should_panic]
+fn double_iterator_set_panics_with_same_values() {
+    let mut array = [1, 2, 3, 4, 5];
+    let mut iter = DoubleIterator::new(&mut array);
+
+    // We could write other values
+    iter.set(3, 3);
+}
+
+#[test]
+#[should_panic]
+fn double_iterator_set_panics_for_overflow() {
+    let mut array = [1, 2, 3, 4, 5];
+    let mut iter = DoubleIterator::new(&mut array);
+
+    iter.set(5, 4);
+}

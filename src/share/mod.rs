@@ -55,13 +55,17 @@ pub struct DoubleIterator<'a, T> {
 
 impl<'a, T> DoubleIterator<'a, T> {
     /// Creates a `DoubleIterator` from a slice
+    /// 
+    /// # Panics
+    /// Panics if `slice.len() < 2`
     pub fn new(slice: &'a mut [T]) -> Self {
+        assert!(slice.len() >= 2);
+
         Self {
             slice,
 
-            // It is safe to put two zeros because when next will be called, it will be first incremented and then, first = 0 and second = 1 which is the expected behaviour
             first: 0,
-            second: 0,
+            second: 1,
         }
     }
 
@@ -87,11 +91,7 @@ impl<'a, T> DoubleIterator<'a, T> {
                 self.second = 0;
                 self.first += 1;
 
-                if self.first == self.slice.len() {
-                    // Restore initial state to prevent the iterator from looping once again
-                    self.first = self.slice.len() - 1;
-                    self.second = self.first;
-
+                if self.first >= self.slice.len() {
                     return Err(());
                 }
             }
@@ -126,17 +126,45 @@ impl<'a, T> DoubleIterator<'a, T> {
             }
         }
     }
+
+    /// Sets the position of the iterator
+    /// 
+    /// # Parameters
+    /// `i` the position of the first pointer of the tuple returned by the `Iterator` trait's implementation
+    /// 
+    /// `j` the position of the second one
+    /// 
+    /// # Panics
+    /// Panics if either `i` or `j` are out of range (greater or equal to `slice.len()`)
+    /// 
+    /// Panics if `i == j`
+    pub fn set(&mut self, i: usize, j: usize) {
+        assert_ne!(i, j);
+        assert!(i < self.slice.len() && j < self.slice.len());
+
+        self.first = i;
+        self.second = j;
+    }
+
+    /// Sets the iterator to the first position
+    pub fn reset(&mut self) {
+        self.first = 0;
+        self.second = 1;
+    }
 }
 
 impl<T> Iterator for DoubleIterator<'_, T> {
     type Item = (*mut T, *mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Err(()) = self.increment() {
+        if self.first == self.slice.len() {
             return None;
         }
 
-        Some(unsafe { (self.nth_ptr(self.first), self.nth_ptr(self.second)) })
+        let returned = Some(unsafe { (self.nth_ptr(self.first), self.nth_ptr(self.second)) });
+        std::mem::drop(self.increment()); // Dropping is a way to ignore the error which doesn't matter here
+
+        returned
     }
 }
 
