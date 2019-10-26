@@ -145,9 +145,10 @@ impl<'a, T> DoubleIterator<'a, T> {
         self.first = i;
         self.second = j;
     }
+}
 
-    /// Sets the iterator to the first position
-    pub fn reset(&mut self) {
+impl<T> crate::ResettableIterator for DoubleIterator<'_, T> {
+    fn reset(&mut self) {
         self.first = 0;
         self.second = 1;
     }
@@ -167,6 +168,7 @@ impl<T> Iterator for DoubleIterator<'_, T> {
         returned
     }
 }
+
 
 #[cfg(test)]
 mod tests;

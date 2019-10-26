@@ -56,6 +56,16 @@ where
     pub fn force_exclude(&mut self, new: T::Item) {
         self.excluded.push(new);
     }
+
+    /// Returns the iterator in use
+    pub fn get_iterator(&self) -> &T {
+        &self.cur
+    }
+
+    /// Returns the iterator in use as a mutable reference
+    pub fn get_mut_iterator(&mut self) -> &mut T {
+        &mut self.cur
+    }
 }
 
 impl<T> Iterator for Exclude<T>
@@ -76,6 +86,16 @@ where
                 },
             }
         }
+    }
+}
+
+impl<T> crate::ResettableIterator for Exclude<T>
+where
+    T: crate::ResettableIterator,
+    T::Item: PartialEq,
+{
+    fn reset(&mut self) {
+        self.cur.reset();
     }
 }
 
