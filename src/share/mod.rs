@@ -169,6 +169,100 @@ impl<T> Iterator for DoubleIterator<'_, T> {
     }
 }
 
+/// A `DoubleIterator` iterating on one single "line" (see explanation below)
+/// 
+/// # Introduction
+/// The iteration cycle of a `DoubleIterator` can be seen as a matrix with `i` as the value of the line and `j` as the value of the collumn. For example, in an array as `[0, 1, 2, 3, 4]`, a `DoubleIterator` will return the numbered cells and discard the blanks
+/// ```text
+/// +---+---+---+---+---+---+
+/// |   |i=0|i=1|i=2|i=3|i=4|
+/// +---+---+---+---+---+---+
+/// |j=0|   | 1 | 2 | 3 | 4 |
+/// +---+---+---+---+---+---+
+/// |j=1| 5 |   | 6 | 7 | 8 |
+/// +---+---+---+---+---+---+
+/// |j=2| 9 |10 |   |11 |12 |
+/// +---+---+---+---+---+---+
+/// |j=3|13 |14 |15 |   |16 |
+/// +---+---+---+---+---+---+
+/// |j=4|17 |18 |19 |20 |   |
+/// +---+---+---+---+---+---+
+/// ```
+/// 
+/// In this example, the first iterator tuple returned (once the two members dereferenced) is `(0, 1)`, then `(0, 2)`, `(0, 3)`, `(0, 4)`, and at the end of line, `i` is reset and `j` is incrememented, returning `(1, 0)`, `(1, 2)` because there is a blank in the cell (`i=1`; `j=1`), `(1, 3)`...
+/// 
+/// The blanks are here because there can't be two mutable references on the same object.
+/// 
+/// But in some cases, you need to iterate only on one single line and not the whole grid, that's why `SingleLineIterator` exists.
+/// 
+/// # Hey, wait! Why using that iterator and not simply iterating manually?
+/// Just like `DoubleIterator` does, this iterator returns two references (and not raw pointers because it's safe in this case) to a member of the slice to iterate, so it allows you to use safe code to do something you can't otherwise
+pub struct SingleLineIterator<'a, T> {
+    slice: &'a mut [T],
+    index: usize,
+    cur: usize,
+}
+
+impl<'a, T> SingleLineIterator<'a, T> {
+    /// Returns a new `SingleLineIterator` which returns a tuple of a mutable reference to `slice[index]` and to another member of `slice` at each iteration
+    /// 
+    /// # Panics
+    /// Panics if `index` is greater or equal to `slice.len()`
+    pub fn new(slice: &'a mut [T], index: usize) -> Self {
+        assert!(index < slice.len());
+
+        Self {
+            slice,
+            index,
+            cur: if index == 0 {
+                1
+            } else {
+                0
+            },
+        }
+    }
+}
+
+impl<T> crate::ResettableIterator for SingleLineIterator<'_, T> {
+    fn reset(&mut self) {
+        self.cur = 0;
+    }
+}
+
+impl<'a, T> Iterator for SingleLineIterator<'a, T> {
+    type Item = (&'a mut T, &'a mut T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let returned = if self.cur >= self.slice.len() {
+            None
+        } else {
+            unsafe {
+                let ptr1 = self.slice.get_unchecked_mut(self.index) as *mut T;
+                let ptr2 = self.slice.get_unchecked_mut(self.cur)   as *mut T;
+
+                Some((&mut *ptr1, &mut *ptr2))
+            }
+        };
+
+        self.cur += 1;
+        if self.cur == self.index {
+            self.cur += 1;
+        }
+
+        returned
+    }
+}
+
+impl<'a, T> From<DoubleIterator<'a, T>> for SingleLineIterator<'a, T> {
+    fn from(src: DoubleIterator<'a, T>) -> Self {
+        Self {
+            cur: src.second,
+            index: src.first,
+            slice: src.slice,
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests;
