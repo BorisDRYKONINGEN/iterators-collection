@@ -99,5 +99,25 @@ where
     }
 }
 
+impl<T> crate::child::ChildIterator for Exclude<T>
+where
+    T: Iterator,
+    T::Item: PartialEq,
+{
+    type Parent = T;
+
+    fn release_parent(self) -> Self::Parent {
+        self.cur
+    }
+
+    fn get_parent_mut(&mut self) -> &mut Self::Parent {
+        &mut self.cur
+    }
+
+    fn get_parent(&self) -> &Self::Parent {
+        &self.cur
+    }
+}
+
 #[cfg(test)]
 mod tests;

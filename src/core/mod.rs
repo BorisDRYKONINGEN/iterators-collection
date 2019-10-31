@@ -60,3 +60,23 @@ where
         self.iterator.reset();
     }
 }
+
+impl<I, F, R> crate::child::ChildIterator for ResettableMap<I, F>
+where
+    I: Iterator,
+    F: FnMut(I::Item) -> R,
+{
+    type Parent = I;
+
+    fn release_parent(self) -> I {
+        self.iterator
+    }
+
+    fn get_parent_mut(&mut self) -> &mut I {
+        &mut self.iterator
+    }
+
+    fn get_parent(&self) -> &I {
+        &self.iterator
+    }
+}
