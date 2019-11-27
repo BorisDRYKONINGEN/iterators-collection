@@ -196,7 +196,9 @@ impl<T> Iterator for DoubleIterator<'_, T> {
 /// But in some cases, you need to iterate only on one single line and not the whole grid, that's why `SingleLineIterator` exists.
 /// 
 /// # Hey, wait! Why using that iterator and not simply iterating manually?
-/// Just like `DoubleIterator` does, this iterator returns two references (and not raw pointers because it's safe in this case) to a member of the slice to iterate, so it allows you to use safe code to do something you can't otherwise
+/// Just like `DoubleIterator` does, this iterator returns two raw pointers to a member of the slice to iterate
+/// 
+/// Since version 0.3.3, the prefered way to do this is to use the `safe_for_each` method
 pub struct SingleLineIterator<'a, T> {
     slice: &'a mut [T],
     index: usize,
@@ -221,6 +223,31 @@ impl<'a, T> SingleLineIterator<'a, T> {
             },
         }
     }
+
+    /// Runs the given closure in a safe context
+    /// 
+    /// # Example
+    /// ```
+    /// use iterators_collection::share::SingleLineIterator;
+    /// 
+    /// let mut array = [1, 2, 3, 4, 5];
+    /// let iter = SingleLineIterator::new(&mut array, 0);
+    /// 
+    /// iter.safe_for_each(|i, j| {
+    ///     println!("Got i = {} and j = {}", i, j);
+    ///     assert_ne!(i, j);
+    /// });
+    /// ```
+    /// 
+    /// # Notes
+    /// Not like a legacy iteration using a `for` loop, i and j are references because it's safe to use in this context
+    pub fn safe_for_each<F: Fn(&mut T, &mut T)>(self, callback: F) {
+        for (i, j) in self {
+            unsafe {
+                callback(&mut *i, &mut *j);
+            }
+        }
+    }
 }
 
 impl<T> crate::ResettableIterator for SingleLineIterator<'_, T> {
@@ -230,7 +257,7 @@ impl<T> crate::ResettableIterator for SingleLineIterator<'_, T> {
 }
 
 impl<'a, T> Iterator for SingleLineIterator<'a, T> {
-    type Item = (&'a mut T, &'a mut T);
+    type Item = (*mut T, *mut T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let returned = if self.cur >= self.slice.len() {
@@ -240,7 +267,7 @@ impl<'a, T> Iterator for SingleLineIterator<'a, T> {
                 let ptr1 = self.slice.get_unchecked_mut(self.index) as *mut T;
                 let ptr2 = self.slice.get_unchecked_mut(self.cur)   as *mut T;
 
-                Some((&mut *ptr1, &mut *ptr2))
+                Some((ptr1, ptr2))
             }
         };
 
