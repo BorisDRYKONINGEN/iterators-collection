@@ -101,8 +101,10 @@ fn single_line_iterator_iterates_well() {
         let iter = SingleLineIterator::new(&mut slice, n);
 
         for (i, j) in iter {
-            assert_eq!(n + 1, *i);
-            assert_ne!(i, j);
+            unsafe {
+                assert_eq!(n + 1, *i);
+                assert_ne!(i, j);
+            }
         }
     }
 }
@@ -128,10 +130,21 @@ fn single_line_iterator_from_double_iterator_works() {
         last_n = n;
 
         println!("Received i = {:?}", i);
-        assert_eq!(*i.0, expected[n].0);
-        assert_eq!(*i.1, expected[n].1);
+        unsafe {
+            assert_eq!(*i.0, expected[n].0);
+            assert_eq!(*i.1, expected[n].1);
+        }
     }
 
     assert_eq!(last_n, expected.len() - 1);
 }
 
+#[test]
+fn single_line_iterator_safe_for_each() {
+    let mut array = [1, 2, 3, 4, 5];
+    let iter = SingleLineIterator::new(&mut array, 0);
+
+    iter.safe_for_each(|i, j| {
+        assert_ne!(i, j);
+    });
+}
