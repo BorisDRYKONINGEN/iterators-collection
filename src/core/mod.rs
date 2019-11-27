@@ -80,3 +80,7 @@ where
         &self.iterator
     }
 }
+
+
+#[cfg(test)]
+mod tests;
